@@ -1,0 +1,179 @@
+<!-- Ad 6 · HydraFacial / glow before an event · mechanic: tap the three steps in order; each plays a treatment animation on the face. -->
+<script type="application/json" id="meta">
+{
+  "title": "3-Step Glow · Sanjay Rithik Hospital",
+  "mechanic": "Sequence taps",
+  "face": true,
+  "gaugeLabel": "GLOW",
+  "concern": "a HydraFacial before an event",
+  "endTitle": "Glow, unlocked!",
+  "endSub": "HydraFacial is a no-needle cleansing facial, often booked before weddings and functions."
+}
+</script>
+
+<style>
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.step{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 4px 9px;font-size:11px;letter-spacing:.12em;touch-action:manipulation}
+.step svg{width:30px;height:30px}
+.step .n{position:absolute;top:-7px;left:-5px;width:22px;height:22px;border-radius:50%;background:var(--ink);color:#fff;font-size:11px;letter-spacing:0;display:grid;place-items:center;box-shadow:0 2px 6px rgba(11,52,66,.25)}
+.step.lock{opacity:.45}
+.step.now{box-shadow:0 4px 0 #0B6A8C,0 0 0 3px var(--teal),0 10px 22px rgba(15,141,186,.3)}
+.step.now::after{content:"";position:absolute;inset:-3px;border-radius:20px;border:3px solid var(--teal);animation:ping 1.6s ease-out infinite}
+.step.ok{background:linear-gradient(160deg,#E4F8F6,#C8EEEC)}
+.step.ok .n{background:var(--teal)}
+.step.no{animation:wobble .4s ease}
+.landscape .steps{gap:8px}
+</style>
+
+<template data-slot="hero">
+<svg class="art" id="art" viewBox="14 26 252 326" preserveAspectRatio="xMidYMax meet" xmlns="http://www.w3.org/2000/svg" aria-label="Illustrated woman whose dull skin brightens through three facial steps">
+  <defs>
+    <radialGradient id="hfDrop" cx="38%" cy="62%" r="70%"><stop offset="0" stop-color="#F2FFFD"/><stop offset=".5" stop-color="#8FE3D8"/><stop offset="1" stop-color="#27B8C4"/></radialGradient>
+    <linearGradient id="hfWand" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#C9D6DA"/></linearGradient>
+  </defs>
+  <g id="face"></g><g id="pores" fill="#2A1810"></g><g id="fxs"></g>
+  <g id="wand" opacity="0">
+    <circle r="11" fill="#8FE3D8" opacity=".45"/>
+    <g transform="rotate(30)"><rect x="-6" y="-58" width="12" height="46" rx="6" fill="url(#hfWand)" stroke="#AFC1C6"/><rect x="-8" y="-14" width="16" height="9" rx="3" fill="#DCE6E9" stroke="#AFC1C6"/><circle cx="0" cy="-2" r="5" fill="#27B8C4"/></g>
+  </g>
+</svg>
+</template>
+
+<template data-slot="panel">
+<h1 class="headline">Function this week? <em>Tap</em> the 3 glow steps</h1>
+<div class="steps">
+  <button class="tapbtn step now" type="button" data-i="0"><span class="n">1</span><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="11" cy="13" r="5" fill="none" stroke="#27B8C4" stroke-width="2"/><circle cx="21" cy="10" r="3" fill="none" stroke="#27B8C4" stroke-width="2"/><circle cx="19" cy="21" r="6" fill="#DFF5F3" stroke="#0F8DBA" stroke-width="2"/></svg>CLEANSE</button>
+  <button class="tapbtn step lock" type="button" data-i="1"><span class="n">2</span><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 5a11 11 0 1 0 11 11" fill="none" stroke="#0F8DBA" stroke-width="2.2" stroke-linecap="round"/><path d="M16 10a6 6 0 1 0 6 6" fill="none" stroke="#27B8C4" stroke-width="2.2" stroke-linecap="round"/><circle cx="16" cy="16" r="2" fill="#0B3442"/></svg>EXTRACT</button>
+  <button class="tapbtn step lock" type="button" data-i="2"><span class="n">3</span><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 4s-8 9.5-8 15a8 8 0 0 0 16 0C24 13.5 16 4 16 4z" fill="url(#stDrop)"/><defs><linearGradient id="stDrop" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8FE3D8"/><stop offset="1" stop-color="#0F8DBA"/></linearGradient></defs><path d="M12 19a4 4 0 0 0 3 3.6" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/></svg>HYDRATE</button>
+</div>
+</template>
+
+<script>
+(() => {
+  'use strict';
+  const { $, $$, clamp, lerp, smooth, easeInOut, f2, el, Sound, buzz } = SR;
+  const DUR = 1.7;
+  const LEVELS = [ // face state after each step
+    { dull: 1, glow: 0, tired: .4, smile: 0 },
+    { dull: .62, glow: .1, tired: .28, smile: .05 },
+    { dull: .3, glow: .3, tired: .12, smile: .15 },
+    { dull: 0, glow: 1, tired: 0, smile: .85 }
+  ];
+  const CAPS = ['Today · Dull, tired-looking skin', 'Step 1 · Cleanse & exfoliate', 'Step 2 · Extract & clear pores', 'Step 3 · Hydrate & glow', 'Event-ready glow*'];
+  const PORES = [[134, 180], [146, 182], [138, 190], [143, 175], [130, 187], [150, 188], [136, 238], [146, 241], [141, 247], [131, 104], [149, 106], [140, 113], [125, 110], [156, 112]];
+
+  let face, blink, art, poresG, fxs, wand, btns, pores = [], fx = [];
+  let doneSteps = 0, anim = null, finishing = 0, lastCap = -1, spawnAcc = 0;
+
+  function setButtons() {
+    btns.forEach((b, i) => {
+      b.classList.toggle('ok', i < doneSteps);
+      b.classList.toggle('now', i === doneSteps && !anim);
+      b.classList.toggle('lock', i > doneSteps || (anim && i === doneSteps));
+    });
+  }
+  function tap(i, b) {
+    if (SR.done || finishing) return;
+    SR.interact();
+    if (anim || i !== doneSteps) {
+      if (i > doneSteps || anim) { b.classList.remove('no'); void b.offsetWidth; b.classList.add('no'); Sound.err(); buzz(20); }
+      return;
+    }
+    anim = { i, t: 0 };
+    Sound.whoosh(); buzz(10);
+    setButtons();
+    SR.caption(CAPS[i + 1]);
+  }
+  function wandAt(i, u) {
+    if (i === 0) { const th = u * Math.PI * 4, r = 64 * (1 - u) + 14; return { x: 140 + r * Math.cos(th), y: 170 + r * 1.15 * Math.sin(th) }; }
+    if (i === 1) {
+      const pts = [[140, 108], [140, 184], [140, 240]], seg = Math.min(1.999, u * 2), k = Math.floor(seg), f = easeInOut(seg - k);
+      return { x: lerp(pts[k][0], pts[k + 1][0], f) + Math.sin(u * 40) * 4, y: lerp(pts[k][1], pts[k + 1][1], f) };
+    }
+    return { x: 140 + Math.sin(u * 14) * 34, y: 64 };
+  }
+  function addFx(kind, x, y, extra) {
+    const e = kind === 'bubble'
+      ? el('circle', { cx: f2(x), cy: f2(y), r: f2(2 + Math.random() * 2.5), fill: '#fff', 'fill-opacity': .45, stroke: '#27B8C4', 'stroke-width': .8 }, fxs)
+      : kind === 'drop'
+        ? el('path', { d: 'M0,-6 C2.2,-2.6 3.8,0 3.8,2.2 A3.8,3.8 0 1,1 -3.8,2.2 C-3.8,0 -2.2,-2.6 0,-6Z', fill: 'url(#hfDrop)' }, fxs)
+        : el('circle', { cx: f2(x), cy: f2(y), r: 2, fill: 'none', stroke: '#8FE3D8', 'stroke-width': 1.6 }, fxs);
+    fx.push(Object.assign({ kind, e, x, y, t: 0 }, extra || {}));
+  }
+
+  SR.register({
+    init() {
+      art = $('#art'); poresG = $('#pores'); fxs = $('#fxs'); wand = $('#wand');
+      face = Face.mount($('#face'), { seed: 21 });
+      blink = Face.blinker();
+      PORES.forEach(([x, y]) => pores.push({ e: el('circle', { cx: x, cy: y, r: f2(1.1 + Math.random() * .6), opacity: .7 }, poresG), x, y, ox: x, oy: y, k: 0, gone: false }));
+      btns = $$('.step');
+      btns.forEach((b, i) => b.addEventListener('click', () => tap(i, b)));
+      setButtons();
+      SR.caption(CAPS[0]);
+    },
+    tutorial() {
+      if (anim || doneSteps > 2) return null;
+      const r = SR.rectOf(btns[doneSteps]);
+      return SR.tapPath(r.cx, r.cy);
+    },
+    idle: true,
+    frame(dt, T) {
+      let lv = LEVELS[doneSteps], u = 0;
+      if (anim) {
+        anim.t += dt; u = Math.min(1, anim.t / DUR);
+        const a = LEVELS[anim.i], b = LEVELS[anim.i + 1], k = smooth(.1, 1, u);
+        lv = { dull: lerp(a.dull, b.dull, k), glow: lerp(a.glow, b.glow, k), tired: lerp(a.tired, b.tired, k), smile: lerp(a.smile, b.smile, k) };
+        const w = wandAt(anim.i, u);
+        wand.setAttribute('transform', `translate(${f2(w.x)} ${f2(w.y)})`);
+        wand.setAttribute('opacity', f2(smooth(0, .08, u) * (1 - smooth(.9, 1, u))));
+        spawnAcc += dt;
+        if (anim.i === 0 && spawnAcc > .035) { spawnAcc = 0; addFx('bubble', w.x + (Math.random() - .5) * 10, w.y + (Math.random() - .5) * 10); }
+        if (anim.i === 1) pores.forEach(p => { if (!p.gone && Math.hypot(p.x - w.x, p.y - w.y) < 20) { p.gone = true; p.k = 0; Sound.pop(); } });
+        if (anim.i === 2 && spawnAcc > .09 && u < .8) { spawnAcc = 0; addFx('drop', w.x, w.y + 8, { vx: (Math.random() - .5) * 60, vy: 40, ty: 105 + Math.random() * 140 }); }
+        if (u >= 1) {
+          doneSteps++; anim = null; wand.setAttribute('opacity', 0);
+          Sound.chime(doneSteps - 1); buzz(15);
+          const c = SR.svgToStage(art, 140, 170); SR.burst(c.x, c.y, 14, { speed: 140, size: 7, life: .7 });
+          if (doneSteps >= 3) { finishing = .5; SR.caption(CAPS[4]); }
+          setButtons();
+        }
+      }
+      pores.forEach(p => {
+        if (!p.gone || p.k >= 1) return;
+        p.k = Math.min(1, p.k + dt / .3);
+        const w = anim && anim.i === 1 ? wandAt(1, Math.min(1, anim.t / DUR)) : { x: p.ox, y: p.oy };
+        p.e.setAttribute('cx', f2(lerp(p.ox, w.x, p.k))); p.e.setAttribute('cy', f2(lerp(p.oy, w.y, p.k)));
+        p.e.setAttribute('opacity', f2(.7 * (1 - p.k)));
+      });
+      for (let i = fx.length - 1; i >= 0; i--) {
+        const f = fx[i];
+        f.t += dt;
+        if (f.kind === 'bubble') {
+          f.e.setAttribute('cy', f2(f.y - 26 * f.t)); f.e.setAttribute('opacity', f2(Math.max(0, 1 - f.t / .7)));
+          if (f.t > .7) { f.e.remove(); fx.splice(i, 1); }
+        } else if (f.kind === 'drop') {
+          f.vy += 380 * dt; f.x += f.vx * dt; f.y += f.vy * dt;
+          f.e.setAttribute('transform', `translate(${f2(f.x)} ${f2(f.y)})`);
+          if (f.y >= f.ty) { f.e.remove(); fx.splice(i, 1); addFx('ring', f.x, f.y); }
+        } else {
+          f.e.setAttribute('r', f2(2 + 12 * f.t / .45)); f.e.setAttribute('opacity', f2(Math.max(0, 1 - f.t / .45)));
+          if (f.t > .45) { f.e.remove(); fx.splice(i, 1); }
+        }
+      }
+      face.set(Object.assign({}, lv, { blink: blink(dt), t: T, rays: SR.reduceMotion ? 0 : (T * 5) % 360, bob: Math.sin(T * 1.7) * .9 }));
+      SR.progress((doneSteps + (anim ? u : 0)) / 3);
+      if (finishing) { finishing -= dt; if (finishing <= 0) { finishing = 0; SR.complete(); } }
+    },
+    reset() {
+      doneSteps = 0; anim = null; finishing = 0;
+      fx.forEach(f => f.e.remove()); fx = [];
+      pores.forEach(p => { p.gone = false; p.k = 0; p.e.setAttribute('cx', p.ox); p.e.setAttribute('cy', p.oy); p.e.setAttribute('opacity', .7); });
+      setButtons(); SR.caption(CAPS[0]);
+    },
+    endArt() {
+      return `<figure class="e-portrait"><img alt="Illustrated woman with glowing, hydrated-looking skin" src="${Face.render({ seed: 21 }, { glow: 1, smile: .85 })}"><figcaption>EVENT READY</figcaption></figure>`;
+    }
+  });
+})();
+</script>

@@ -1,0 +1,159 @@
+<!-- Ad 5 · Anti-ageing (lines, dullness, firmness) · mechanic: drag the mirror divider to reveal a fresher, still-recognisable reflection. -->
+<script type="application/json" id="meta">
+{
+  "title": "Look Fresh Mirror · Sanjay Rithik Hospital",
+  "mechanic": "Reveal wipe",
+  "face": true,
+  "gaugeLabel": "FRESH",
+  "concern": "fine lines and dull skin (anti-ageing)",
+  "endTitle": "Fresh, and still you.",
+  "endSub": "Ask Dr. Kiruthika what may help with lines, dullness or firmness, what it can't do, and what it costs."
+}
+</script>
+
+<style>
+#art{touch-action:none;cursor:ew-resize}
+.headline.two em{display:block;margin-top:2px}
+.dragpill{display:flex;align-items:center;justify-content:center;gap:10px;font-size:11.5px;font-weight:800;letter-spacing:.2em;color:var(--teal)}
+.dragpill span{display:inline-block;animation:nudge 1.2s ease-in-out infinite}
+.dragpill span:last-child{animation-direction:reverse}
+@keyframes nudge{0%,100%{transform:translateX(0)}50%{transform:translateX(-4px)}}
+.badge text{font-family:var(--f-body);font-weight:800;font-size:9.5px;fill:#0B3442}
+</style>
+
+<template data-slot="hero">
+<svg class="art" id="art" viewBox="0 14 280 344" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" aria-label="A mirror comparing a tired-looking face with a fresher reflection of the same woman">
+  <defs>
+    <clipPath id="mOval"><ellipse cx="140" cy="188" rx="122" ry="158"/></clipPath>
+    <clipPath id="mFresh"><rect id="freshRect" x="0" y="0" width="0" height="400"/></clipPath>
+    <linearGradient id="mCool" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#DCE6E8"/><stop offset="1" stop-color="#B9C9CD"/></linearGradient>
+    <radialGradient id="mWarm" cx="50%" cy="40%" r="70%"><stop offset="0" stop-color="#FFF4DC"/><stop offset=".6" stop-color="#FFE2B8"/><stop offset="1" stop-color="#F6CFA0"/></radialGradient>
+    <linearGradient id="mGold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFE6A6"/><stop offset=".45" stop-color="#E2A73F"/><stop offset=".7" stop-color="#FFD98A"/><stop offset="1" stop-color="#B57620"/></linearGradient>
+    <filter id="mSh" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#0B3442" flood-opacity=".25"/></filter>
+  </defs>
+  <ellipse cx="140" cy="194" rx="128" ry="162" fill="#0B3442" opacity=".12"/>
+  <g clip-path="url(#mOval)">
+    <rect x="0" y="0" width="280" height="400" fill="url(#mCool)"/>
+    <g id="tired"></g>
+    <g clip-path="url(#mFresh)">
+      <rect x="0" y="0" width="280" height="400" fill="url(#mWarm)"/>
+      <g id="fresh"></g>
+    </g>
+    <path d="M30,120 L120,30 L150,30 L40,150Z M40,190 L170,40 L184,40 L48,206Z" fill="#fff" opacity=".1"/>
+    <line id="divLine" x1="0" y1="20" x2="0" y2="360" stroke="#fff" stroke-width="2.6"/>
+  </g>
+  <ellipse cx="140" cy="188" rx="122" ry="158" fill="none" stroke="url(#mGold)" stroke-width="10"/>
+  <ellipse cx="140" cy="188" rx="115" ry="151" fill="none" stroke="#B57620" stroke-width="1" opacity=".5"/>
+  <g id="lblFresh"><rect x="-26" y="-10" width="52" height="20" rx="10" fill="#FFC54D"/><text x="0" y="3.6" text-anchor="middle" font-family="Bricolage,sans-serif" font-weight="800" font-size="9" letter-spacing="1.5" fill="#0B3442">FRESH</text></g>
+  <g id="lblTired"><rect x="-26" y="-10" width="52" height="20" rx="10" fill="#0B3442" opacity=".8"/><text x="0" y="3.6" text-anchor="middle" font-family="Bricolage,sans-serif" font-weight="800" font-size="9" letter-spacing="1.5" fill="#fff">TIRED</text></g>
+  <g id="badges"></g>
+  <g id="handle" filter="url(#mSh)">
+    <circle r="18" fill="#fff"/>
+    <circle r="18" fill="none" stroke="#0F8DBA" stroke-width="2.5"/>
+    <path d="M-5,-6 L-11,0 L-5,6 M5,-6 L11,0 L5,6" fill="none" stroke="#0F8DBA" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>
+</template>
+
+<template data-slot="panel">
+<h1 class="headline two">Look fresh. <em>Still look like yourself.</em></h1>
+<div class="dragpill" aria-hidden="true"><span>‹</span>DRAG THE MIRROR<span>›</span></div>
+</template>
+
+<script>
+(() => {
+  'use strict';
+  const { $, clamp, lerp, smooth, easeInOut, f2, el, Sound, buzz } = SR;
+  const X0 = 18, X1 = 262, START = .08;
+  const BADGES = [[.3, 66, 92, 'Same eyes'], [.55, 66, 286, 'Same smile'], [.82, 214, 104, 'Just fresher']];
+  const CAPS = [[0, 'Today · Lines, dullness, tired eyes'], [.12, 'Softer-looking lines'], [.42, 'Brighter, rested-looking skin'], [.72, 'Same eyes, same smile, still you'], [.99, 'Fresh, and still you*']];
+
+  let art, fresh, tired, freshRect, divLine, handle, lblF, lblT, badgesG, badges = [], blink;
+  let target = START, shown = START, dragging = false, snapping = false, ghost = null, lastCap = -1, lastTick = 0;
+
+  const xOf = p => X0 + p * (X1 - X0);
+  function setDivider(p) {
+    const x = xOf(p);
+    freshRect.setAttribute('width', f2(x));
+    divLine.setAttribute('x1', f2(x)); divLine.setAttribute('x2', f2(x));
+    handle.setAttribute('transform', `translate(${f2(x)} 188)`);
+    lblF.setAttribute('transform', `translate(${f2(Math.min(x - 40, 92))} 52)`);
+    lblF.setAttribute('opacity', f2(smooth(.18, .3, p)));
+    lblT.setAttribute('transform', `translate(${f2(Math.max(x + 40, 188))} 52)`);
+    lblT.setAttribute('opacity', f2(1 - smooth(.7, .82, p)));
+  }
+  function pFromEvent(e) { return clamp((SR.clientToSvg(art, e.clientX, e.clientY).x - X0) / (X1 - X0)); }
+
+  SR.register({
+    init() {
+      art = $('#art'); freshRect = $('#freshRect'); divLine = $('#divLine'); handle = $('#handle');
+      lblF = $('#lblFresh'); lblT = $('#lblTired'); badgesG = $('#badges');
+      tired = Face.mount($('#tired'), { lines: true, sun: false, seed: 9 });
+      fresh = Face.mount($('#fresh'), { lines: true, sun: false, seed: 9 });
+      blink = Face.blinker();
+      BADGES.forEach(([th, x, y, txt]) => {
+        const g = el('g', { class: 'badge', opacity: 0 }, badgesG);
+        el('rect', { x: -40, y: -11, width: 80, height: 22, rx: 11, fill: '#fff' }, g);
+        el('circle', { cx: -28, cy: 0, r: 7, fill: '#27B8C4' }, g);
+        el('path', { d: 'M-31,0 L-28.5,2.6 L-24.5,-2.4', fill: 'none', stroke: '#fff', 'stroke-width': 1.8, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, g);
+        const t = el('text', { x: 7, y: 3.4, 'text-anchor': 'middle' }, g); t.textContent = txt;
+        badges.push({ g, th, x, y, k: 0, shown: false });
+      });
+      art.addEventListener('pointerdown', e => {
+        if (SR.done || snapping) return;
+        e.preventDefault(); SR.interact();
+        dragging = true;
+        try { art.setPointerCapture(e.pointerId); } catch (err) {}
+        target = pFromEvent(e);
+      });
+      art.addEventListener('pointermove', e => { if (!dragging) return; target = pFromEvent(e); SR.poke(); });
+      const up = () => { if (!dragging) return; dragging = false; if (target > .85) { target = 1; snapping = true; } SR.poke(); };
+      art.addEventListener('pointerup', up);
+      art.addEventListener('pointercancel', up);
+      setDivider(START);
+    },
+    tutorial(isGhost) {
+      const base = shown, dist = Math.max(.12, Math.min(.36, 1 - shown));
+      const a = SR.svgToStage(art, xOf(base), 188), b = SR.svgToStage(art, xOf(base + dist), 188);
+      const path = SR.dragPath(a.x, a.y + 4, b.x, b.y + 4, 3.1);
+      ghost = isGhost ? { base, dist } : null;
+      return t => {
+        const s = path(t);
+        if (ghost) { const c = t % 3.1; shown = target = c < 1.95 ? base + dist * (s.p || 0) : base + dist * (1 - easeInOut(clamp((c - 1.95) / .8))); }
+        return s;
+      };
+    },
+    tutorialEnd() { if (ghost) { target = shown; ghost = null; } },
+    frame(dt, T) {
+      if (!ghost) {
+        const k = dragging ? 18 : snapping ? 6 : 8;
+        shown += (target - shown) * (1 - Math.exp(-k * dt));
+        if (Math.abs(target - shown) < .0005) shown = target;
+      }
+      setDivider(shown);
+      if (dragging && SR.userDriven() && Math.abs(shown - lastTick) > .07) { lastTick = shown; Sound.tick(Math.round(shown * 12)); buzz(5); }
+      const b = blink(dt), bob = Math.sin(T * 1.7) * .9;
+      tired.set({ lines: .8, tired: .75, dull: .7, glow: 0, smile: 0, blink: b, bob });
+      fresh.set({ lines: .2, tired: 0, dull: 0, glow: .55 + .45 * smooth(.5, 1, shown), smile: .2 + .45 * smooth(.3, 1, shown), blink: b, t: T, bob });
+      badges.forEach(bd => {
+        const on = shown >= bd.th && SR.everInteracted;
+        if (on && !bd.shown && SR.userDriven()) { Sound.chime(badges.indexOf(bd)); const p = SR.svgToStage(art, bd.x, bd.y); SR.burst(p.x, p.y, 8, { speed: 90, size: 6, life: .6 }); }
+        bd.shown = on;
+        bd.k += ((on ? 1 : 0) - bd.k) * (1 - Math.exp(-12 * dt));
+        const s = .6 + .4 * bd.k + .08 * Math.sin(Math.PI * bd.k);
+        bd.g.setAttribute('opacity', f2(bd.k));
+        bd.g.setAttribute('transform', `translate(${bd.x} ${bd.y}) scale(${f2(s)})`);
+      });
+      const prog = clamp((shown - START) / (1 - START));
+      SR.progress(prog);
+      let ci = 0; CAPS.forEach(([th], i) => { if (prog >= th) ci = i; });
+      if (ci !== lastCap) { lastCap = ci; SR.caption(CAPS[ci][1]); }
+      if (snapping && !SR.done && shown > .995) { snapping = false; SR.complete(); }
+    },
+    reset() { target = shown = START; snapping = false; badges.forEach(b => { b.k = 0; b.shown = false; }); },
+    endArt() {
+      return `<figure class="e-portrait"><img alt="Illustrated woman looking fresh and natural" src="${Face.render({ lines: true, seed: 9 }, { lines: .2, glow: 1, smile: .65 })}"><figcaption>STILL YOU</figcaption></figure>`;
+    }
+  });
+})();
+</script>

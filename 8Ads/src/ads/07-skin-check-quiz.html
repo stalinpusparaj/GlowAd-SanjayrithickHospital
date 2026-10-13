@@ -1,0 +1,142 @@
+<!-- Ad 7 · Skin check quiz (lead qualifier) · mechanic: answer 3 tap questions from an illustrated dermatologist; the answers pre-fill the WhatsApp lead. -->
+<script type="application/json" id="meta">
+{
+  "title": "3-Tap Skin Check · Sanjay Rithik Hospital",
+  "mechanic": "Quiz",
+  "face": true,
+  "gaugeLabel": "DONE",
+  "concern": "a skin concern",
+  "endTitle": "Your skin brief is ready!",
+  "endSub": "Send it to Dr. Kiruthika on WhatsApp. Your first consultation is free.",
+  "disclaimer": "Illustration only. Not a diagnosis.",
+  "endDisclaimer": "This skin check is not a diagnosis or medical advice. Options are discussed and confirmed at consultation. Open daily 10am–2:30pm & 6–9:30pm · 77A Sengunthapuram Main Rd, Karur."
+}
+</script>
+
+<style>
+.say{position:absolute;left:92px;right:12px;top:6px;z-index:2;background:#fff;border-radius:18px 18px 18px 6px;padding:10px 13px;box-shadow:0 8px 22px rgba(11,52,66,.14);
+  font-size:15px;font-weight:800;line-height:1.22;letter-spacing:-.01em;min-height:58px;display:flex;flex-direction:column;justify-content:center}
+.say small{display:block;font-size:9.5px;font-weight:800;letter-spacing:.18em;color:var(--teal);margin-bottom:3px}
+.say.pop{animation:popIn .35s cubic-bezier(.3,1.5,.5,1)}
+.qhead{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.qhead .headline{text-align:left;font-size:19px}
+.qpips{display:flex;gap:5px;flex:none}
+.qpips i{width:26px;height:6px;border-radius:3px;background:#DCEFF0}
+.qpips i.on{background:var(--teal)}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.tile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:54px;padding:8px 4px;font-size:12px;line-height:1.1;letter-spacing:-.01em;text-align:center;touch-action:manipulation;animation:rise .35s ease-out both}
+.tile svg{width:24px;height:24px}
+.tile.big{min-height:74px;font-size:13.5px}
+.tile.pick{background:var(--ink);color:#fff;transform:scale(.97)}
+.tile:nth-child(2){animation-delay:.04s}.tile:nth-child(3){animation-delay:.08s}.tile:nth-child(4){animation-delay:.12s}.tile:nth-child(5){animation-delay:.16s}.tile:nth-child(6){animation-delay:.2s}
+.landscape .tile{min-height:48px}
+.landscape .tile.big{min-height:62px}
+.brief{width:100%;max-width:300px;background:#FFFAF5;color:var(--ink);border-radius:18px;padding:12px 14px;text-align:left;box-shadow:0 12px 30px rgba(0,0,0,.25)}
+.brief small{display:block;font-size:9.5px;font-weight:800;letter-spacing:.2em;color:var(--teal)}
+.brief dl{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;margin:8px 0;font-size:12.5px}
+.brief dt{opacity:.55;font-weight:700}
+.brief dd{margin:0;font-weight:800}
+.brief p{margin:0;padding-top:8px;border-top:1px dashed rgba(11,52,66,.2);font-size:11.5px;line-height:1.35}
+.brief p b{color:var(--teal)}
+</style>
+
+<template data-slot="hero">
+<svg class="art" id="art" viewBox="0 -60 280 412" preserveAspectRatio="xMidYMax meet" xmlns="http://www.w3.org/2000/svg" aria-label="Illustrated dermatologist asking you questions"><g id="face"></g></svg>
+<div class="say" id="say" aria-live="polite"><small>DR. KIRUTHIKA ASKS</small><span id="sayTxt"></span></div>
+</template>
+
+<template data-slot="panel">
+<div class="qhead"><h1 class="headline"><em>3 taps.</em> Your skin brief.</h1><div class="qpips" id="qpips"><i></i><i></i><i></i></div></div>
+<div class="tiles" id="tiles"></div>
+</template>
+
+<script>
+(() => {
+  'use strict';
+  const { $, $$, Sound, buzz } = SR;
+  const I = {
+    acne: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="#F3D9C9"/><circle cx="8.5" cy="10" r="1.8" fill="#D9584F"/><circle cx="15" cy="9" r="1.4" fill="#D9584F"/><circle cx="13" cy="15.5" r="1.9" fill="#D9584F"/></svg>',
+    pig: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="#F3D9C9"/><ellipse cx="9" cy="10" rx="3.2" ry="2.4" fill="#8A5A3C"/><circle cx="15.5" cy="14" r="1.8" fill="#8A5A3C"/></svg>',
+    hair: '<svg viewBox="0 0 24 24" fill="none" stroke="#2A1520" stroke-width="1.6" stroke-linecap="round"><path d="M6 4c3 4 3 9 0 16M11 3c2 5 2 10 0 15M16 4c3 4 2 8 0 11"/><path d="M18 18c1 1 1 2 0 3" stroke="#D9584F"/></svg>',
+    lines: '<svg viewBox="0 0 24 24" fill="none" stroke="#8A5A3C" stroke-width="1.7" stroke-linecap="round"><path d="M4 8q4-3 8 0t8 0M4 13q4-3 8 0t8 0M6 18q3-2 6 0t6 0"/></svg>',
+    laser: '<svg viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="12" rx="3" fill="#0F8DBA"/><path d="M12 15v3M8 17l-2 2M16 17l2 2" stroke="#27B8C4" stroke-width="1.8" stroke-linecap="round"/><path d="M6 22h12" stroke="#2A1520" stroke-width="1.6" stroke-dasharray="1.5 2"/></svg>',
+    dull: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5" fill="#C9C2B8"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4" stroke="#C9C2B8" stroke-width="1.6" stroke-linecap="round"/></svg>'
+  };
+  const Q = [
+    { ask: 'What bothers you most right now?', key: 'concern', opts: [
+      ['acne', 'Breakouts', 'breakouts and acne', 'Peels · MNRF · prescription care'],
+      ['pig', 'Dark patches', 'dark patches and pigmentation', 'Q-Switched laser · peels · skincare'],
+      ['hair', 'Hair fall', 'hair fall', 'Cause check · medicines · PRP'],
+      ['lines', 'Fine lines', 'fine lines and firmness', 'Skin boosters · HIFU · injectables'],
+      ['laser', 'Unwanted hair', 'unwanted hair', 'Triple Wave laser hair reduction'],
+      ['dull', 'Dull skin', 'dull, tired-looking skin', 'HydraFacial · skin boosters']] },
+    { ask: 'How long has it bothered you?', key: 'since', opts: [['', 'A few weeks', 'a few weeks'], ['', 'Some months', 'some months'], ['', 'Over a year', 'over a year']] },
+    { ask: 'And what matters most to you?', key: 'prio', opts: [['', 'A natural look', 'a natural look'], ['', 'Little time off', 'little time off'], ['', 'Knowing the cost', 'knowing the cost']] }
+  ];
+  let face, blink, tilesEl, sayEl, sayTxt, pips, q = 0, ans = {}, locked = false, nod = 0, finishing = 0;
+
+  function show(i) {
+    const Qi = Q[i];
+    sayTxt.textContent = Qi.ask;
+    sayEl.classList.remove('pop'); void sayEl.offsetWidth; sayEl.classList.add('pop');
+    tilesEl.replaceChildren();
+    Qi.opts.forEach((o, k) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'tapbtn tile' + (i ? ' big' : '');
+      b.innerHTML = (o[0] ? I[o[0]] : '') + `<span>${o[1]}</span>`;
+      b.addEventListener('click', () => pick(i, k, b));
+      tilesEl.appendChild(b);
+    });
+    pips.forEach((p, k) => p.classList.toggle('on', k < i));
+    SR.caption(i === 0 ? 'Dr. S. Kiruthika · Dermatologist' : `Question ${i + 1} of 3`);
+  }
+  function pick(i, k, b) {
+    if (locked || SR.done || i !== q) return;
+    SR.interact();
+    locked = true;
+    b.classList.add('pick');
+    ans[Q[i].key] = Q[i].opts[k];
+    Sound.chime(i); buzz(10); nod = 1;
+    const r = SR.rectOf(b); SR.burst(r.cx, r.cy, 10, { speed: 110, size: 6, life: .5 });
+    setTimeout(() => {
+      q++; locked = false;
+      if (q < Q.length) show(q);
+      else {
+        pips.forEach(p => p.classList.add('on'));
+        const c = ans.concern;
+        SR.setConcern(`${c[2]} (bothered for ${ans.since[2]}; what matters most: ${ans.prio[2]})`);
+        sayTxt.textContent = 'Thank you! Your skin brief is ready.';
+        SR.caption('Skin brief ready');
+        finishing = .6;
+      }
+    }, 380);
+  }
+
+  SR.register({
+    init() {
+      tilesEl = $('#tiles'); sayEl = $('#say'); sayTxt = $('#sayTxt'); pips = $$('#qpips i');
+      face = Face.mount($('#face'), { outfit: 'coat', seed: 17 });
+      blink = Face.blinker();
+      show(0);
+    },
+    tutorial() {
+      const t = tilesEl.children[q === 0 ? 0 : 1];
+      if (!t || finishing) return null;
+      const r = SR.rectOf(t);
+      return SR.tapPath(r.cx, r.cy);
+    },
+    frame(dt, T) {
+      nod = Math.max(0, nod - dt * 1.6);
+      const n = Math.sin((1 - nod) * Math.PI * 2) * nod * 5;
+      face.set({ glow: .45, dull: 0, smile: .38 + .3 * nod, blink: blink(dt), t: T, rays: SR.reduceMotion ? 0 : (T * 5) % 360, bob: Math.sin(T * 1.7) * .9 + n });
+      SR.progress(q / Q.length);
+      if (finishing) { finishing -= dt; if (finishing <= 0) { finishing = 0; SR.complete(); } }
+    },
+    reset() { q = 0; ans = {}; locked = false; finishing = 0; SR.setConcern(SR.CONFIG.concern); show(0); },
+    endArt() {
+      const c = ans.concern || Q[0].opts[0], s = ans.since || Q[1].opts[1], p = ans.prio || Q[2].opts[0];
+      return `<div class="brief"><small>YOUR SKIN BRIEF</small><dl><dt>Concern</dt><dd>${c[1]}</dd><dt>For</dt><dd>${s[1]}</dd><dt>Priority</dt><dd>${p[1]}</dd></dl><p>Options you could ask about: <b>${c[3]}</b></p></div>`;
+    }
+  });
+})();
+</script>

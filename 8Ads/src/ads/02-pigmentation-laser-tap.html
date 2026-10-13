@@ -1,0 +1,148 @@
+<!-- Ad 2 · Pigmentation / dark patches · mechanic: tap each dark spot; a Q-Switched laser reticle locks on and fades it. -->
+<script type="application/json" id="meta">
+{
+  "title": "Even Tone Laser Tap · Sanjay Rithik Hospital",
+  "mechanic": "Tap targets",
+  "face": true,
+  "gaugeLabel": "EVEN",
+  "concern": "dark patches and pigmentation",
+  "endTitle": "Even tone, unlocked!",
+  "endSub": "Dark patches have causes. Dr. Kiruthika treats the cause, not just the spot."
+}
+</script>
+
+<style>
+#art{cursor:crosshair;touch-action:none}
+.pips{display:flex;justify-content:center;gap:6px;margin-top:-2px}
+.pips i{width:16px;height:16px;border-radius:50%;background:#E3EFEF;box-shadow:inset 0 1px 3px rgba(11,52,66,.18);transition:background .25s,transform .25s}
+.pips i.on{background:radial-gradient(circle at 35% 35%,#8FE3D8,#0F8DBA);transform:scale(1.12);box-shadow:0 0 10px rgba(39,184,196,.55)}
+.laser-tag{display:flex;align-items:center;justify-content:center;gap:7px;font-size:11px;font-weight:800;letter-spacing:.14em;color:var(--teal)}
+.laser-tag::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--coral);box-shadow:0 0 0 3px rgba(238,122,91,.25);animation:ping 1.4s ease-out infinite}
+.reticle{fill:none;stroke:#27B8C4;stroke-width:1.4;stroke-dasharray:3 3}
+</style>
+
+<template data-slot="hero">
+<svg class="art" id="art" viewBox="14 26 252 326" preserveAspectRatio="xMidYMax meet" xmlns="http://www.w3.org/2000/svg" aria-label="Illustrated woman with dark spots you can tap to treat"><g id="face"></g><g id="rets"></g><g id="zaps"></g></svg>
+</template>
+
+<template data-slot="panel">
+<h1 class="headline"><em>Tap</em> each dark spot to <mark>zap it</mark></h1>
+<div class="laser-tag">Q-SWITCHED Nd:YAG LASER · ON</div>
+<div class="pips" id="pips" aria-hidden="true"></div>
+</template>
+
+<script>
+(() => {
+  'use strict';
+  const { $, clamp, smooth, lerp, f2, el, Sound, buzz } = SR;
+  let face, blink, art, rets, zaps, pipEls = [], targets = [], cleared = 0, shownFrac = 0, finishing = 0;
+
+  function captionFor(n, total) {
+    if (n === 0) return 'Today · Dark spots, uneven tone';
+    if (n >= total) return 'Brighter, even-looking tone*';
+    return `${n} of ${total} spots treated`;
+  }
+  function zap(t) {
+    t.state = 'zap'; t.tz = 0;
+    const p = SR.svgToStage(art, t.x, t.y);
+    Sound.zap(); setTimeout(() => Sound.zap(), 70); setTimeout(() => Sound.pop(), 190);
+    buzz(12);
+    SR.burst(p.x, p.y, 10, { colors: ['#FFFFFF', '#8FE3D8', '#FFC54D'], speed: 110, size: 7, g: 60, lift: 10, life: .55 });
+    t.ret.remove();
+    cleared++;
+    pipEls.forEach((e, i) => e.classList.toggle('on', i < cleared));
+    SR.caption(captionFor(cleared, targets.length));
+    if (cleared >= targets.length) finishing = .7;
+  }
+  function hit(e) {
+    if (SR.done || finishing) return;
+    e.preventDefault();
+    SR.interact();
+    const pt = SR.clientToSvg(art, e.clientX, e.clientY);
+    let best = null, bd = 1e9;
+    targets.forEach(t => {
+      if (t.state !== 'live') return;
+      const d = Math.hypot(t.x - pt.x, t.y - pt.y);
+      if (d < Math.max(22, t.r * 2.2) && d < bd) { best = t; bd = d; }
+    });
+    if (best) zap(best);
+    else { // a soft miss ring so the tap still feels answered
+      const c = el('circle', { cx: f2(pt.x), cy: f2(pt.y), r: 4, fill: 'none', stroke: '#0B3442', 'stroke-width': 1, opacity: .4 }, zaps);
+      let k = 0; const step = () => { k += .08; c.setAttribute('r', f2(4 + 10 * k)); c.setAttribute('opacity', f2(.4 * (1 - k))); if (k < 1) requestAnimationFrame(step); else c.remove(); };
+      requestAnimationFrame(step);
+      Sound.click();
+    }
+  }
+  const next = () => targets.filter(t => t.state === 'live').sort((a, b) => b.r - a.r)[0];
+
+  SR.register({
+    init() {
+      art = $('#art'); rets = $('#rets'); zaps = $('#zaps');
+      face = Face.mount($('#face'), { pigment: true, seed: 11 });
+      blink = Face.blinker();
+      /* the larger spots are the targets; each small freckle follows its nearest target */
+      face.spots.forEach(s => { if (s.r >= 6) targets.push({ x: s.x, y: s.y, r: s.r, spot: s, kids: [], state: 'live', tz: 0 }); });
+      face.spots.forEach(s => {
+        if (s.r >= 6) return;
+        let best = targets[0], bd = 1e9;
+        targets.forEach(t => { const d = Math.hypot(t.x - s.x, t.y - s.y); if (d < bd) { bd = d; best = t; } });
+        best.kids.push(s);
+      });
+      targets.forEach(t => {
+        t.ret = el('g', { transform: `translate(${t.x} ${t.y})` }, rets);
+        el('circle', { r: f2(t.r * 1.5 + 4), class: 'reticle' }, t.ret);
+      });
+      targets.forEach(() => { const i = document.createElement('i'); $('#pips').appendChild(i); pipEls.push(i); });
+      art.addEventListener('pointerdown', hit);
+      SR.caption(captionFor(0, targets.length));
+    },
+    tutorial() {
+      const t = next();
+      if (!t) return null;
+      const p = SR.svgToStage(art, t.x, t.y);
+      return SR.tapPath(p.x, p.y);
+    },
+    frame(dt, T) {
+      targets.forEach((t, i) => {
+        if (t.state === 'live') {
+          const s = 1 + .12 * Math.sin(T * 4 + i);
+          t.ret.setAttribute('transform', `translate(${t.x} ${t.y}) rotate(${f2((T * 40 + i * 30) % 360)}) scale(${f2(s)})`);
+          t.spot.v = 1; t.kids.forEach(k => { k.v = 1; });
+        } else {
+          t.tz = Math.min(1, t.tz + dt / .45);
+          t.spot.v = 1 - smooth(0, 1, t.tz);
+          t.kids.forEach(k => { k.v = 1 - smooth(.2, 1, t.tz); });
+          if (t.flash == null) {
+            t.flash = el('circle', { cx: t.x, cy: t.y, r: 2, fill: '#FFFFFF' }, zaps);
+            t.ring = el('circle', { cx: t.x, cy: t.y, r: f2(t.r * 2.4), fill: 'none', stroke: '#27B8C4', 'stroke-width': 2 }, zaps);
+          }
+          if (t.flash) {
+            const k = t.tz;
+            t.flash.setAttribute('r', f2(2 + t.r * 1.6 * Math.sin(Math.PI * Math.min(1, k * 1.6))));
+            t.flash.setAttribute('opacity', f2(.9 * (1 - k)));
+            t.ring.setAttribute('r', f2(lerp(t.r * 2.4, 2, Math.min(1, k * 2.2))));
+            t.ring.setAttribute('opacity', f2(1 - smooth(.35, .6, k)));
+            if (k >= 1) { t.flash.remove(); t.ring.remove(); t.flash = false; }
+          }
+        }
+      });
+      const frac = cleared / targets.length;
+      shownFrac += (frac - shownFrac) * (1 - Math.exp(-6 * dt));
+      face.set({ glow: smooth(.2, 1, shownFrac), dull: .5 * (1 - shownFrac), smile: smooth(.7, 1, shownFrac), blink: blink(dt), t: T,
+        rays: SR.reduceMotion ? 0 : (T * 5) % 360, bob: Math.sin(T * 1.7) * .9 });
+      SR.progress(shownFrac);
+      if (finishing) { finishing -= dt; if (finishing <= 0) { finishing = 0; SR.complete(); } }
+    },
+    reset() {
+      cleared = 0; shownFrac = 0; finishing = 0;
+      zaps.replaceChildren();
+      targets.forEach(t => { t.state = 'live'; t.tz = 0; t.flash = null; rets.appendChild(t.ret); });
+      pipEls.forEach(e => e.classList.remove('on'));
+      SR.caption(captionFor(0, targets.length));
+    },
+    endArt() {
+      return `<figure class="e-portrait"><img alt="Illustrated woman with an even, glowing skin tone" src="${Face.render({ pigment: true, seed: 11 }, { pigmentClear: 1, glow: 1, smile: 1 })}"><figcaption>EVEN TONE</figcaption></figure>`;
+    }
+  });
+})();
+</script>

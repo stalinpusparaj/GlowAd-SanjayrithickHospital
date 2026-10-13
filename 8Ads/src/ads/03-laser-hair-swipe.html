@@ -1,0 +1,221 @@
+<!-- Ad 3 · Triple Wave laser hair reduction · mechanic: swipe a laser handpiece along the leg; hairs under it vanish. -->
+<script type="application/json" id="meta">
+{
+  "title": "Laser Hair Swipe · Sanjay Rithik Hospital",
+  "mechanic": "Swipe to clear",
+  "face": false,
+  "gaugeLabel": "SMOOTH",
+  "concern": "laser hair reduction",
+  "endTitle": "Smooth move!",
+  "endSub": "Laser reduces hair growth over a course of sessions. Ask about legs, arms, face, PCOS-related facial hair and more."
+}
+</script>
+
+<style>
+#art{overflow:visible;touch-action:none;cursor:none}
+.areas{display:flex;flex-wrap:wrap;justify-content:center;gap:5px;margin-top:-2px}
+.areas span{font-size:10.5px;font-weight:700;padding:5px 9px;border-radius:999px;background:#E6F4F4;color:var(--ink)}
+.e-portrait.leg img{object-fit:cover}
+</style>
+
+<template data-slot="hero">
+<svg class="art" id="art" viewBox="0 0 300 330" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" aria-label="Illustrated leg; swipe the laser across it to remove hair">
+  <defs>
+    <linearGradient id="lgSkin" gradientUnits="userSpaceOnUse" x1="0" y1="-52" x2="0" y2="52"><stop offset="0" stop-color="#B9825C"/><stop offset=".45" stop-color="#A06A45"/><stop offset="1" stop-color="#734328"/></linearGradient>
+    <linearGradient id="lgTowel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#DDF1F1"/></linearGradient>
+    <radialGradient id="lgBeam"><stop offset="0" stop-color="#E9FFFC" stop-opacity=".95"/><stop offset=".55" stop-color="#8FE3D8" stop-opacity=".5"/><stop offset="1" stop-color="#27B8C4" stop-opacity="0"/></radialGradient>
+    <linearGradient id="lgDev" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".6" stop-color="#EEF3F4"/><stop offset="1" stop-color="#C9D6DA"/></linearGradient>
+    <filter id="lgBlur" x="-20%" y="-50%" width="140%" height="200%"><feGaussianBlur stdDeviation="3"/></filter>
+    <radialGradient id="lgSilver" cx="35%" cy="35%" r="70%"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".5" stop-color="#D5DCE0"/><stop offset="1" stop-color="#8E9BA1"/></radialGradient>
+  </defs>
+  <g id="scene">
+    <g transform="translate(150 175) rotate(37)">
+      <rect x="-340" y="-92" width="680" height="184" rx="40" fill="url(#lgTowel)"/>
+      <path d="M-340,-60 H340 M-340,60 H340" stroke="#BFE6E8" stroke-width="7"/>
+      <path d="M-340,-48 H340 M-340,48 H340" stroke="#EE7A5B" stroke-width="2" opacity=".55"/>
+      <ellipse cx="0" cy="40" rx="300" ry="16" fill="#0B3442" opacity=".12" filter="url(#lgBlur)"/>
+      <g id="leg">
+        <path fill="url(#lgSkin)" d="M-300,-41 C-200,-48 -120,-52 -60,-47 C20,-40 140,-31 300,-26 L300,26 C140,31 30,36 -50,45 C-120,53 -195,50 -300,43Z"/>
+        <path d="M-220,30 C-120,40 60,30 240,20" fill="none" stroke="#5A321C" stroke-width="10" opacity=".18" filter="url(#lgBlur)"/>
+        <path id="sheen" d="M-230,-28 C-120,-36 60,-26 240,-16" fill="none" stroke="#FFFFFF" stroke-width="7" stroke-linecap="round" opacity=".12" filter="url(#lgBlur)"/>
+        <g id="hairs" fill="none" stroke="#2A160E" stroke-width="1.15" stroke-linecap="round"></g>
+        <g id="anklet"></g>
+        <g id="trail"></g>
+      </g>
+    </g>
+  </g>
+  <g id="laser" opacity="0">
+    <circle id="beam" r="22" fill="url(#lgBeam)"/>
+    <circle r="22" fill="none" stroke="#27B8C4" stroke-width="1.5" stroke-dasharray="3 3"/>
+    <g transform="rotate(-32)">
+      <path d="M0,-74 C2,-96 26,-104 40,-120" fill="none" stroke="#9FB2B8" stroke-width="3" stroke-linecap="round"/>
+      <rect x="-10" y="-76" width="20" height="62" rx="10" fill="url(#lgDev)" stroke="#AFC1C6" stroke-width="1"/>
+      <rect x="-3" y="-64" width="6" height="16" rx="3" fill="#0F8DBA"/>
+      <rect x="-13" y="-18" width="26" height="13" rx="4" fill="#DCE6E9" stroke="#AFC1C6" stroke-width="1"/>
+      <rect x="-8" y="-7" width="16" height="5" rx="2" fill="#27B8C4"/>
+    </g>
+  </g>
+</svg>
+</template>
+
+<template data-slot="panel">
+<h1 class="headline"><em>Swipe</em> the laser. <mark>Skip the waxing.</mark></h1>
+<div class="areas" aria-label="Areas treated"><span>Legs</span><span>Arms</span><span>Underarms</span><span>Face</span><span>Full body</span></div>
+</template>
+
+<script>
+(() => {
+  'use strict';
+  const { $, clamp, lerp, smooth, f2, el, Sound, buzz, rnd } = SR;
+  const ANG = 37 * Math.PI / 180, CX = 150, CY = 175, R = 22;
+  const toGlobal = (x, y) => ({ x: CX + x * Math.cos(ANG) - y * Math.sin(ANG), y: CY + x * Math.sin(ANG) + y * Math.cos(ANG) });
+  const toLocal = (x, y) => { const dx = x - CX, dy = y - CY; return { x: dx * Math.cos(ANG) + dy * Math.sin(ANG), y: -dx * Math.sin(ANG) + dy * Math.cos(ANG) }; };
+  const topEdge = x => x < -60 ? lerp(-41, -47, (x + 300) / 240) : lerp(-47, -26, (x + 60) / 360);
+  const botEdge = x => x < -50 ? lerp(43, 45, (x + 300) / 250) : lerp(45, 26, (x + 50) / 350);
+
+  let art, laser, beam, hairsG, trailG, sheen, hairs = [], counted = 0, zapped = 0, cover = 0, shownCover = 0;
+  let down = false, prev = null, lastZap = 0, finishing = 0, offsetY = 0, trail = [], lastCap = '';
+
+  function build() {
+    for (let i = 0; i < 520; i++) {
+      const x = -290 + rnd() * 580, y0 = topEdge(x) + 5, y1 = botEdge(x) - 5, y = lerp(y0, y1, rnd());
+      const g = toGlobal(x, y);
+      if (g.x < -45 || g.x > 345 || g.y < -10 || g.y > 340) continue;
+      const a = (rnd() - .5) * .8 + .2, L = 5 + rnd() * 3.5, bend = (rnd() - .5) * 3;
+      const ex = x + L * Math.cos(a), ey = y + L * Math.sin(a);
+      const e = el('path', { d: `M${f2(x)},${f2(y)} Q${f2((x + ex) / 2 - bend * Math.sin(a))},${f2((y + ey) / 2 + bend * Math.cos(a))} ${f2(ex)},${f2(ey)}`, opacity: f2(.55 + rnd() * .4) }, hairsG);
+      const count = g.x > 6 && g.x < 294 && g.y > 6 && g.y < 324;
+      hairs.push({ e, x, y, o: +e.getAttribute('opacity'), live: true, f: 0, count });
+      if (count) counted++;
+    }
+  }
+  function buildAnklet() { // a silver kolusu near the ankle, so the limb reads as a leg at a glance
+    const g = $('#anklet'), X = 150, t = topEdge(X), b = botEdge(X);
+    for (let y = t - 1; y <= b + 1; y += 4.4) {
+      const k = (y - (t + b) / 2) / ((b - t) / 2), x = X + 5 * (1 - k * k);
+      el('circle', { cx: f2(x), cy: f2(y), r: 2.3, fill: 'url(#lgSilver)' }, g);
+      if (Math.round((y - t) / 4.4) % 3 === 1) el('path', { d: `M${f2(x + 2)},${f2(y - 1.6)} q5,1.6 0,3.2 z`, fill: 'url(#lgSilver)', transform: `translate(2 0)` }, g);
+    }
+  }
+  function placeLaser(p) { laser.setAttribute('transform', `translate(${f2(p.x)} ${f2(p.y)})`); }
+  function sweep(a, b) { // zap every live hair within R of the segment a->b (local coords)
+    const dx = b.x - a.x, dy = b.y - a.y, L2 = dx * dx + dy * dy || 1;
+    let n = 0;
+    for (const h of hairs) {
+      if (!h.live) continue;
+      const t = clamp(((h.x - a.x) * dx + (h.y - a.y) * dy) / L2);
+      if (Math.hypot(h.x - (a.x + dx * t), h.y - (a.y + dy * t)) < R) {
+        h.live = false; n++;
+        if (h.count) zapped++;
+        if (n % 4 === 1 && SR.userDriven()) {
+          const g = toGlobal(h.x, h.y), s = SR.svgToStage(art, g.x, g.y);
+          SR.burst(s.x, s.y, 3, { colors: ['#FFFFFF', '#8FE3D8', '#FFC54D'], speed: 60, size: 5, g: 30, lift: 10, life: .4 });
+        }
+      }
+    }
+    if (n && SR.userDriven() && SR.now() - lastZap > 70) { lastZap = SR.now(); Sound.zap(); buzz(4); }
+    cover = counted ? zapped / counted : 0;
+  }
+  function addTrail(l) {
+    if (trail.length > 26) trail.shift().e.remove();
+    trail.push({ e: el('circle', { cx: f2(l.x), cy: f2(l.y), r: R, fill: '#8FE3D8', opacity: .22 }, trailG), t: 0 });
+  }
+  function pointAt(e) { const p = SR.clientToSvg(art, e.clientX, e.clientY); return { x: p.x, y: p.y + offsetY }; }
+
+  function onDown(e) {
+    if (SR.done || finishing) return;
+    e.preventDefault();
+    SR.interact();
+    offsetY = e.pointerType === 'touch' ? -34 : 0; // keep the handpiece visible above a fingertip
+    down = true;
+    try { art.setPointerCapture(e.pointerId); } catch (err) {}
+    const p = pointAt(e);
+    placeLaser(p); laser.setAttribute('opacity', 1);
+    prev = toLocal(p.x, p.y);
+    sweep(prev, prev); addTrail(prev);
+  }
+  function onMove(e) {
+    const p = pointAt(e);
+    if (!down) { if (e.pointerType === 'mouse' && !SR.done) { placeLaser(p); laser.setAttribute('opacity', .85); } return; }
+    SR.poke();
+    placeLaser(p);
+    const l = toLocal(p.x, p.y);
+    sweep(prev, l);
+    if (Math.hypot(l.x - prev.x, l.y - prev.y) > 6) addTrail(l);
+    prev = l;
+  }
+  function onUp() { down = false; prev = null; }
+
+  SR.register({
+    init() {
+      art = $('#art'); laser = $('#laser'); beam = $('#beam'); hairsG = $('#hairs'); trailG = $('#trail'); sheen = $('#sheen');
+      build();
+      buildAnklet();
+      art.addEventListener('pointerdown', onDown);
+      art.addEventListener('pointermove', onMove);
+      art.addEventListener('pointerup', onUp);
+      art.addEventListener('pointercancel', onUp);
+      art.addEventListener('pointerleave', e => { if (!down && e.pointerType === 'mouse') laser.setAttribute('opacity', 0); });
+      SR.caption('Today · Waxing every few weeks');
+    },
+    /* the hand drags along the leg; the laser rides with it as a preview */
+    tutorial() {
+      const a = toGlobal(-150, -6), b = toGlobal(140, 4);
+      const sa = SR.svgToStage(art, a.x, a.y), sb = SR.svgToStage(art, b.x, b.y);
+      const path = SR.dragPath(sa.x, sa.y, sb.x, sb.y, 2.8);
+      return t => {
+        const s = path(t);
+        if (!down) {
+          const p = s.p || 0;
+          placeLaser({ x: lerp(a.x, b.x, p), y: lerp(a.y, b.y, p) });
+          laser.setAttribute('opacity', f2(s.a == null ? 1 : s.a));
+        }
+        return s;
+      };
+    },
+    tutorialEnd() { if (!down) laser.setAttribute('opacity', 0); },
+    frame(dt, T) {
+      for (const h of hairs) {
+        if (h.live || h.f >= 1) continue;
+        h.f = Math.min(1, h.f + dt / .28);
+        h.e.setAttribute('opacity', f2(h.o * (1 - h.f)));
+        if (h.f >= 1) h.e.setAttribute('display', 'none');
+      }
+      for (let i = trail.length - 1; i >= 0; i--) {
+        const tr = trail[i];
+        tr.t += dt;
+        tr.e.setAttribute('opacity', f2(Math.max(0, .22 * (1 - tr.t / .6))));
+        if (tr.t > .6) { tr.e.remove(); trail.splice(i, 1); }
+      }
+      beam.setAttribute('opacity', f2(.75 + .25 * Math.sin(T * 14)));
+      shownCover += (cover - shownCover) * (1 - Math.exp(-8 * dt));
+      sheen.setAttribute('opacity', f2(.12 + .5 * smooth(.3, 1, shownCover)));
+      SR.progress(shownCover);
+      const cap = shownCover < .02 ? 'Today · Waxing every few weeks' : shownCover < .35 ? 'Laser targets the hair root' : shownCover < .7 ? 'Fewer ingrown hairs, less shaving' : shownCover < .88 ? 'Almost there, keep swiping' : 'Smooth, long-term hair reduction*';
+      if (cap !== lastCap) { lastCap = cap; SR.caption(cap); }
+      if (!finishing && !SR.done && cover >= .88) {
+        finishing = .75; down = false;
+        hairs.forEach(h => { if (h.live) { h.live = false; if (h.count) zapped++; } });
+        cover = 1;
+        laser.setAttribute('opacity', 0);
+      }
+      if (finishing) { finishing -= dt; if (finishing <= 0) { finishing = 0; SR.complete(); } }
+    },
+    reset() {
+      zapped = 0; cover = shownCover = 0; finishing = 0; down = false; prev = null;
+      hairs.forEach(h => { h.live = true; h.f = 0; h.e.removeAttribute('display'); h.e.setAttribute('opacity', f2(h.o)); });
+      trail.forEach(t => t.e.remove()); trail = [];
+    },
+    endArt() {
+      const c = art.cloneNode(true);
+      ['#laser', '#trail'].forEach(s => { const n = c.querySelector(s); if (n) n.remove(); });
+      c.querySelectorAll('#hairs path').forEach(p => p.remove());
+      c.removeAttribute('id'); c.removeAttribute('class'); c.removeAttribute('style');
+      c.setAttribute('viewBox', '100 110 190 190'); c.setAttribute('preserveAspectRatio', 'xMidYMid slice');
+      c.setAttribute('width', '360'); c.setAttribute('height', '360');
+      const src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(c));
+      return `<figure class="e-portrait leg"><img alt="Illustrated smooth leg" src="${src}"><figcaption>SMOOTH SKIN</figcaption></figure>`;
+    }
+  });
+})();
+</script>

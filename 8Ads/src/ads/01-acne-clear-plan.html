@@ -1,0 +1,154 @@
+<!-- Ad 1 · Acne & acne marks · mechanic: drag a slider through the 4-step care plan; breakouts calm and marks fade. -->
+<script type="application/json" id="meta">
+{
+  "title": "Acne Clear Plan · Sanjay Rithik Hospital",
+  "mechanic": "Slider",
+  "face": true,
+  "gaugeLabel": "CLEAR",
+  "concern": "acne and acne marks",
+  "endTitle": "Clear plan, unlocked!",
+  "endSub": "Acne has causes. Dr. Kiruthika finds yours, then builds a plan for your skin type."
+}
+</script>
+
+<style>
+.thumb svg{width:26px;height:26px}
+</style>
+
+<template data-slot="hero">
+<svg class="art" id="art" viewBox="14 26 252 326" preserveAspectRatio="xMidYMax meet" xmlns="http://www.w3.org/2000/svg" aria-label="Illustrated woman whose breakouts calm as her care plan progresses"><g id="face"></g></svg>
+</template>
+
+<template data-slot="panel">
+<h1 class="headline"><em>Slide</em> through your <mark>clear-skin plan</mark></h1>
+<div class="slider" id="slider">
+  <div class="bubble" id="bubble">START</div>
+  <div class="track" id="track">
+    <div class="fill"></div>
+    <div class="hint" id="hint">SLIDE TO CLEAR ›››</div>
+    <div class="thumb idle" id="thumb" role="slider" tabindex="0" aria-label="Care plan progress" aria-valuemin="0" aria-valuemax="12" aria-valuenow="0" aria-valuetext="Start">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5 4.5 5.4v5.4c0 4.6 3.1 8.6 7.5 10.2 4.4-1.6 7.5-5.6 7.5-10.2V5.4z" fill="#0F8DBA"/><path d="M12 8v7M8.5 11.5h7" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg>
+    </div>
+  </div>
+  <div class="ticks" id="ticks" aria-hidden="true"></div>
+</div>
+</template>
+
+<script>
+(() => {
+  'use strict';
+  const { $, clamp, smooth, easeInOut, f2, Sound, buzz } = SR;
+  const STEPS = 12;
+  const LABELS = ['ASSESS', 'PLAN', 'TREAT', 'FOLLOW-UP'];
+  const CAPTIONS = ['Today · Breakouts and marks', 'Step 1 · Your skin type is checked', 'Step 2 · A plan made for your skin', 'Step 3 · Treatment, as advised', 'Step 4 · Follow-ups keep it on track'];
+  const BUBBLES = ['START', 'ASSESS', 'PLAN', 'TREAT', 'FOLLOW-UP'];
+  const stepOf = p => p < .06 ? 0 : p < .33 ? 1 : p < .66 ? 2 : p < .97 ? 3 : 4;
+
+  let face, blink, art, slider, trackEl, thumb, bubble, hint, tickEls = [];
+  let target = 0, shown = 0, dragging = false, grab = 0, lastStep = -1, lastDi = 0, ghost = null;
+
+  function pFromX(clientX) {
+    const r = trackEl.getBoundingClientRect(), k = r.width / trackEl.offsetWidth;
+    return (clientX - (r.left + 25 * k)) / (r.width - 50 * k);
+  }
+
+  SR.register({
+    init() {
+      art = $('#art'); slider = $('#slider'); trackEl = $('#track'); thumb = $('#thumb'); bubble = $('#bubble'); hint = $('#hint');
+      face = Face.mount($('#face'), { acne: true, seed: 5 });
+      blink = Face.blinker();
+      LABELS.forEach((t, i) => {
+        const s = document.createElement('span');
+        s.textContent = t; s.style.left = (i / (LABELS.length - 1) * 100) + '%';
+        $('#ticks').appendChild(s); tickEls.push(s);
+      });
+      trackEl.addEventListener('pointerdown', e => {
+        if (SR.done) return;
+        e.preventDefault();
+        SR.interact();
+        dragging = true;
+        try { trackEl.setPointerCapture(e.pointerId); } catch (err) {}
+        const p = pFromX(e.clientX), onThumb = !!e.target.closest('.thumb');
+        grab = onThumb ? shown - p : 0;
+        if (!onThumb) target = clamp(p);
+        thumb.classList.add('drag'); thumb.classList.remove('idle');
+      });
+      trackEl.addEventListener('pointermove', e => { if (!dragging) return; target = clamp(pFromX(e.clientX) + grab); SR.poke(); });
+      const release = () => { if (!dragging) return; dragging = false; thumb.classList.remove('drag'); if (target > .88) target = 1; SR.poke(); };
+      trackEl.addEventListener('pointerup', release);
+      trackEl.addEventListener('pointercancel', release);
+      thumb.addEventListener('keydown', e => {
+        if (SR.done) return;
+        const step = 1 / STEPS, cur = Math.round(target * STEPS) / STEPS;
+        let next = null;
+        if (e.key === 'ArrowRight' || e.key === 'ArrowUp') next = cur + step;
+        else if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') next = cur - step;
+        else if (e.key === 'End') next = 1;
+        else if (e.key === 'Home') next = 0;
+        if (next === null) return;
+        e.preventDefault(); SR.interact(); target = clamp(next);
+      });
+    },
+    /* the hand ghost-drags the slider forward and lets it ease back, until the first touch */
+    tutorial(isGhost) {
+      const r = SR.rectOf(trackEl), base = shown, dist = Math.max(.12, Math.min(.34, 1 - shown));
+      const xAt = p => r.x + 25 + p * (r.w - 50);
+      const path = SR.dragPath(xAt(base), r.cy + 4, xAt(base + dist), r.cy + 4, 3.1);
+      ghost = isGhost ? { base, dist } : null;
+      if (!isGhost) thumb.classList.add('idle');
+      return t => {
+        const s = path(t);
+        if (ghost) {
+          const c = t % 3.1;
+          shown = target = c < 1.95 ? base + dist * (s.p || 0) : base + dist * (1 - easeInOut(clamp((c - 1.95) / .8)));
+        }
+        return s;
+      };
+    },
+    tutorialEnd() { if (ghost) { target = shown; ghost = null; } thumb.classList.remove('idle'); },
+    frame(dt, T) {
+      if (!ghost) {
+        const k = dragging ? 20 : 7;
+        shown += (target - shown) * (1 - Math.exp(-k * dt));
+        if (Math.abs(target - shown) < .0004) shown = target;
+      }
+      slider.style.setProperty('--p', shown.toFixed(4));
+      hint.style.opacity = clamp(1 - shown * 3).toFixed(2);
+
+      const step = stepOf(shown);
+      if (step !== lastStep) {
+        lastStep = step;
+        bubble.textContent = BUBBLES[step];
+        SR.caption(CAPTIONS[step]);
+        tickEls.forEach((s, i) => s.classList.toggle('on', step >= i + 1));
+        thumb.setAttribute('aria-valuetext', BUBBLES[step]);
+      }
+      const di = Math.floor(shown * STEPS + 1e-4);
+      if (di !== lastDi) {
+        if (di > lastDi && SR.userDriven()) { Sound.tick(di); buzz(6); }
+        lastDi = di;
+        thumb.setAttribute('aria-valuenow', di);
+      }
+      /* a soft burst wherever a breakout calms down */
+      face.acne.forEach(it => {
+        const was = it.v;
+        it.v = 1 - smooth(it.t, it.t + it.w, shown);
+        if (was > .5 && it.v <= .5 && SR.userDriven()) {
+          const p = SR.svgToStage(art, it.x, it.y);
+          SR.burst(p.x, p.y, 6, { colors: ['#8FE3D8', '#FFFFFF', '#27B8C4'], speed: 70, size: 6, g: 40, lift: 20, life: .55 });
+          Sound.pop();
+        }
+      });
+      face.marks.forEach(it => { it.v = 1 - smooth(it.t, it.t + it.w, shown); });
+      face.set({ glow: smooth(.4, 1, shown), dull: .55 * (1 - shown), smile: smooth(.72, 1, shown), blink: blink(dt), t: T,
+        rays: SR.reduceMotion ? 0 : (T * 5) % 360, bob: Math.sin(T * 1.7) * .9 });
+      SR.progress(shown);
+      if (!SR.done && shown > .995 && target >= 1) SR.complete();
+    },
+    reset() { target = shown = 0; lastDi = 0; },
+    endArt() {
+      return `<figure class="e-portrait"><img alt="Illustrated woman with calm, clear-looking skin" src="${Face.render({ acne: true, seed: 5 }, { acneClear: 1, glow: 1, smile: 1 })}"><figcaption>YOUR PLAN</figcaption></figure>`;
+    }
+  });
+})();
+</script>
